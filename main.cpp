@@ -3,16 +3,28 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/dnn/dnn.hpp>
 
-void testSegmentation()
+int main(int argc, char **argv) 
 {
 	cv::Size size = cv::Size(1280,720);
+	const char *onnxModelFilename = argc >= 2 ? argv[1] : "rvm_mobilenetv3_fp32.onnx";
+	bool use_CUDA = false;
+	if(argc >= 3) {
+		if(!strcmp(argv[2], "GPU") || !strcmp(argv[2], "CUDA"))
+			use_CUDA = true;
+		else if(!strcmp(argv[2], "CPU"))
+			use_CUDA = false;
+		else {
+			printf("invalid argument 2 : %s, should be CPU, GPU or CUDA\n", argv[2]);
+		}
+	}
 	int deviceID = 0;
-	bool use_CUDA = true;
 	
+	//creates the onnx runtime environment
 	Ort::Env env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, "segmentation");
     Ort::SessionOptions sessionOptions;
     sessionOptions.SetIntraOpNumThreads(1);
     
+    //activates the CUDA backend
     if(use_CUDA) {
     	OrtCUDAProviderOptions cuda_options;
     	sessionOptions.AppendExecutionProvider_CUDA(cuda_options);
@@ -28,7 +40,7 @@ void testSegmentation()
 	cap.open(deviceID);
 	if (!cap.isOpened()) {
 		printf("can not open device %d\n", deviceID);
-		return ;
+		return 0;
 	}
 	
 	cap.set(cv::CAP_PROP_FRAME_WIDTH, size.width);
@@ -39,6 +51,7 @@ void testSegmentation()
 	
 	Ort::MemoryInfo memoryInfo = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
 	
+	//Not sure if this really allocate on the GPU, there is currently no documentation on it...
 	Ort::MemoryInfo memoryInfoCuda("Cuda", OrtAllocatorType::OrtDeviceAllocator, 0, OrtMemType::OrtMemTypeDefault);
 	
 	std::vector<float> src_data(size.width * size.height * 3);
@@ -114,10 +127,5 @@ void testSegmentation()
         
         
 	}
-}
-
-int main(int argc, char **argv) 
-{
-	testSegmentation();
     return 0;
 }
