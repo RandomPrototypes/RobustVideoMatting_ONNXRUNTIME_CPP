@@ -30,7 +30,7 @@ int main(int argc, char **argv)
     	sessionOptions.AppendExecutionProvider_CUDA(cuda_options);
     }
     sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
-	Ort::Session session(env, "rvm_mobilenetv3_fp32.onnx", sessionOptions);
+	Ort::Session session(env, onnxModelFilename, sessionOptions);
 	Ort::IoBinding io_binding(session);
 	
 	Ort::AllocatorWithDefaultOptions allocator;
